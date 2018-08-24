@@ -59,7 +59,7 @@ example: `make release PLATFORM=osx BUILD_TYPE=libs` will build static and dynam
 ![alt text](https://raw.githubusercontent.com/Keyframe/c_start/master/screenshot.png)
 
 ### TODO
-* ~~Refactor static, dynamic, exe into separate branches~~
+* ~~Refactor static, dynamic, exe into separate branches~~ ✓
 * Test other platforms (linux and mingw a priority)
 * Revise build directory structure
 * Sane defaults for libs/exe if none provided, along with auto-detect of the platform
