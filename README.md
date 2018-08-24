@@ -14,7 +14,7 @@ __Warning: Don't use this for exes, yet. Usable, but alpha alert!__
 
 You can build static or dynamic library or even an exe out of same make, across platforms!
 
-Main feature are modules which get compiled into their own object. 
+Main feature are modules, auto discovered, which get compiled into their own object. 
 Within each module you get automatic platform overrides: 
 
 ```
