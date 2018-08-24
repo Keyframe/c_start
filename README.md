@@ -38,11 +38,12 @@ src
 
 In this example, within `module_one`, `_osx/module_one_override.c` will override 
 `module_one_override.c` from the root of `module_one`. Thus, any file that exists 
-in platform subdirectory will override it's parent if they share the same name. 
+in platform subdirectory will override its parent if they share the same name. 
 
 In order to accomplish this, each module has to have `module.mk` file, 
-and submodule (platform directories) their own module.mk. Templates for both are in 
-`make_tpls`. Eventually, I'll make a shell script to scaffold directory structures. 
+and submodule (platform directories) has to have their own module.mk. 
+Templates for both are in `make_tpls`. 
+Eventually, I'll make a shell script to scaffold directory structures. 
 
 Through those module/submodule.mk files you can override all the compile/link/include 
 flags for each module/submodule as you wish.
