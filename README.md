@@ -48,3 +48,12 @@ Through those module/submodule.mk files you can override all the compile/link/in
 flags for each module/submodule as you wish.
 
 ![alt text](https://raw.githubusercontent.com/Keyframe/c_start/master/screenshot.png)
+
+### TODO
+* Refactor static, dynamic, exe into separate branches
+* Test other platforms (linux and mingw a priority)
+* Revise build directory structure
+* Sane defaults for libs/exe if none provided, along with auto-detect of the platform
+* ASM (NASM) integration into build
+* `make install` - with prefix and probably with public/private structure for headers within modules
+* Optional: Optimization targets. I do them manually, but I may reconsider - it would be a third level down then `src/module/_osx/x86_64` for example
