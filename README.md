@@ -57,3 +57,7 @@ flags for each module/submodule as you wish.
 * ASM (NASM) integration into build
 * `make install` - with prefix and probably with public/private structure for headers within modules
 * Optional: Optimization targets. I do them manually, but I may reconsider - it would be a third level down then `src/module/_osx/x86_64` for example
+
+Further down the line: 
+* Convert everything into a single file utility to scaffold this from the command line
+* Introduce external library dependencies, based on simple JSON, along with custom pre/build/post scripts, if needed. I already have that in the full build system I use, but it needs decoupling. Think of it as a poor man's npm install.
