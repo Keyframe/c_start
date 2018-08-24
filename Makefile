@@ -1,12 +1,13 @@
-# Shuriken lib
-# PLATFORM sets the platform, release and debug for each are available
 # Usage: make release/debug PLATFORM=osx
-
-# full example for OSX dynamic lib
-# @libtool -dynamic $(addsuffix .o,$(addprefix $(PREFIX)/$(PLATFORM)/_objects_/,$(subst .c,.o, $(MODULES)))) -Lextlib/build/osx/release/glfw3/lib -lglfw3 -o $(PREFIX)/$(PLATFORM)/lib$(LIBNAME).dylib -framework CoreFoundation -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo -framework Carbon -lSystem -macosx_version_min 10.11 -install_name @executable_path/lib$(LIBNAME).dylib -compatibility_version 0.0.1 -current_version 0.0.1 -undefined dynamic_lookup -flat_namespace -multiply_defined suppress;
+# PLATFORM= sets platform
+# BUILD_TYPE= sets type of build: static, dynamic, exe(cutable), libs (both static and dynamic), all
+# targets: release debug
 
 PLATFORM ?= none
 PLATFORMS := osx windows linux ios android
+
+BUILD_TYPE ?= none
+BUILD_TYPES := static dynamic exe libs all
 
 # Get src/ directories
 MODULES := $(sort $(dir $(wildcard src/*/)))
@@ -49,6 +50,7 @@ DRESTOFLAGS := $(RESTOFLAGS)
 OUT_LIBRARIES :=
 OUT_RESTO :=
 OUT_LINKERFLAGS :=
+OUT_DONE :=
 
 .PHONY : all debug release clean
 
@@ -80,8 +82,13 @@ clean:
 proglib:
 	@echo 
 
-	$(if $(filter none,$(PLATFORM)), $(error No platform set. Available platforms: $(PLATFORMS)) )
+	@# check if platform is set
+	$(if $(filter none,$(PLATFORM)), $(error No platform set. Available platforms: $(PLATFORMS)))
 
+	@# check if build type is set
+	$(if $(filter none,$(BUILD_TYPE)), $(error No build type set. Available build types: $(BUILD_TYPES)))
+
+	@# Banner
 	@echo "\033[33m==============================================================================\033[0m"
 	@echo "\033[33m        _____ __  ____  ______  ______ __ _______   __\033[0m"
 	@echo "\033[33m  __/|_/ ___// / / / / / / __ \/  _/ //_// ____/ | / /_/|_\033[0m"
@@ -94,8 +101,14 @@ proglib:
 	@mkdir -p $(PREFIX)/$(PLATFORM)
 	@rm -rf $(PREFIX)/$(PLATFORM)/$(OUT_CCFILE)
 
+	@echo "\033[33mBuild Type:\033[0m \033[32m$(BUILD_TYPE)\033[0m"
 	@echo "\033[33mDetected Modules:\n\033[32m$(MODULES)" "\033[0m" "\033[0m"
 	@echo "\033[33m==================================================\033[0m"
+
+	$(if $(filter libs static dynamic, $(BUILD_TYPE)), \
+		@echo "Libname: \033[34m$(LIBNAME)\033[0m";, \
+		@echo "Name: \033[34m$(LIBNAME)\033[0m"; \
+	)
 
 	@echo "Platform:\033[34m" $(PLATFORM)"\033[0m"
 	@echo "CC:" $(CC)
@@ -122,13 +135,12 @@ proglib:
 		echo D_OUT_GENERAL_RESTO += $(subst -L,-L$$(ROOTPATH),$(DRESTO)) >> $(PREFIX)/$(PLATFORM)/$(OUT_CCFILE); \
 		echo D_OUT_GENERAL_LINKERFLAGS += $(subst -L,-L$$(ROOTPATH),$(DLINKERFLAGS)) >> $(PREFIX)/$(PLATFORM)/$(OUT_CCFILE); \
 	)
-
-	@echo "Libname:" $(LIBNAME)
+	
 	@echo "PREFIX:" $(PREFIX)
 	@echo "DEBUG:\033[33m" $(DEBUG)"\033[0m"
 	@echo "\033[33m==================================================\033[0m"
 
-	@# compiling static
+	@# compiling objects
 	@$(foreach module,$(MODULES), \
 		if [[ "$(DEBUG)" == "FALSE" ]]; then \
 		if ! [[ -z "$(CFLAGS_$(module))" ]]; then echo "\033[33mCFLAGS:\033[0m" $(CFLAGS_$(module)); fi; \
@@ -174,23 +186,33 @@ proglib:
 		echo "--------------------------------------------------"; \
 	)
 
-	@# linking/archive final static lib
-	@echo "Linking:" $(addsuffix .o,$(addprefix $(PREFIX)/$(PLATFORM)/_objects_/,$(subst .c,.o, $(MODULES))));
-	@ar rcs $(PREFIX)/$(PLATFORM)/lib$(LIBNAME).a $(addsuffix .o,$(addprefix $(PREFIX)/$(PLATFORM)/_objects_/,$(subst .c,.o, $(MODULES))));
-
+	@echo "\033[32mDone linking objects\033[0m"
 	@echo "\033[33m==================================================\033[0m"
+
+	@# linking/archive final static lib
+	@$(if $(filter all libs static, $(BUILD_TYPE)), \
+		echo "Linking static library from:" $(addsuffix .o,$(subst .c,.o, $(MODULES))); \
+		ar rcs $(PREFIX)/$(PLATFORM)/lib$(LIBNAME).a $(addsuffix .o,$(addprefix $(PREFIX)/$(PLATFORM)/_objects_/,$(subst .c,.o, $(MODULES)))); \
+		$(eval OUT_DONE = $(OUT_DONE)"\033[32mDone - static:  $(PREFIX)/$(PLATFORM)/lib$(LIBNAME).a\033[0m\n") \
+	)
+	
+	@# linking dynamic lib
+	$(if $(filter all libs dynamic, $(BUILD_TYPE)), \
+		@if [[ "$(PLATFORM)" == "osx" ]]; then \
+			echo "Linking dynamic library from:" $(addsuffix .o,$(subst .c,.o, $(MODULES))); \
+			libtool -dynamic $(addsuffix .o,$(addprefix $(PREFIX)/$(PLATFORM)/_objects_dynamic_/,$(subst .c,.o, $(MODULES)))) -o $(PREFIX)/$(PLATFORM)/lib$(LIBNAME)-dyn.dylib -macosx_version_min 10.11 -install_name @executable_path/lib$(LIBNAME)-dyn.dylib -compatibility_version 0.0.1 -current_version 0.0.1 -undefined dynamic_lookup -flat_namespace -multiply_defined suppress; \
+			$(eval OUT_DONE = $(OUT_DONE)"\033[32mDone - dynamic: $(PREFIX)/$(PLATFORM)/lib$(LIBNAME)-dyn.dylib\033[0m\n") \
+		fi; \
+	)
 
 	@# linking executable
-	@echo "Building executable:" $(PREFIX)/$(PLATFORM)/"\033[34m"$(LIBNAME)"\033[0m";
-	@$(CC) -o $(PREFIX)/$(PLATFORM)/$(LIBNAME) $(addsuffix .o,$(addprefix $(PREFIX)/$(PLATFORM)/_objects_/,$(subst .c,.o, $(MODULES))));
+	@$(if $(filter all exe, $(BUILD_TYPE)), \
+		echo "Linking executable:" $(PREFIX)/$(PLATFORM)/"\033[34m"$(LIBNAME)"\033[0m"; \
+		$(CC) -o $(PREFIX)/$(PLATFORM)/$(LIBNAME) $(addsuffix .o,$(addprefix $(PREFIX)/$(PLATFORM)/_objects_/,$(subst .c,.o, $(MODULES)))); \
+		$(eval OUT_DONE = $(OUT_DONE)"\033[32mDone - exe:     $(PREFIX)/$(PLATFORM)/$(LIBNAME)\033[0m\n") \
+	)
 
 	@echo "\033[33m==================================================\033[0m"
-
-	@# linking dynamic lib
-	@if [[ "$(PLATFORM)" == "osx" ]]; then \
-		libtool -dynamic $(addsuffix .o,$(addprefix $(PREFIX)/$(PLATFORM)/_objects_dynamic_/,$(subst .c,.o, $(MODULES)))) -o $(PREFIX)/$(PLATFORM)/lib$(LIBNAME)-dyn.dylib -macosx_version_min 10.11 -install_name @executable_path/lib$(LIBNAME)-dyn.dylib -compatibility_version 0.0.1 -current_version 0.0.1 -undefined dynamic_lookup -flat_namespace -multiply_defined suppress; \
-		echo "\033[32mDone - $(PREFIX)/$(PLATFORM)/lib$(LIBNAME)-dyn.dylib\033[0m"; \
-	fi;
 
 	@if [[ "$(DEBUG)" == "FALSE" ]]; then \
 		rm -rf $(PREFIX)/$(PLATFORM)/_objects_; \
@@ -198,6 +220,5 @@ proglib:
 	fi;
 
 	@#==================================================
-	@echo "\033[32mDone - $(PREFIX)/$(PLATFORM)/lib$(LIBNAME).a\033[0m"
-	@echo "\033[32mDone - $(PREFIX)/$(PLATFORM)/$(LIBNAME)\033[0m"
+	@echo $(OUT_DONE)
 

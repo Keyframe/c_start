@@ -48,10 +48,18 @@ Eventually, I'll make a shell script to scaffold directory structures.
 Through those module/submodule.mk files you can override all the compile/link/include 
 flags for each module/submodule as you wish.
 
+### Usage
+
+`make` followed by either `release` or `debug` and then one of the flags
+* `PLATFORM=` with either of the following `osx windows linux ios android`
+* `BUILD_TYPE=` with either of the following `static dynamic exe libs all`
+
+example: `make release PLATFORM=osx BUILD_TYPE=libs` will build static and dynamic libs in release mode for MacOS
+
 ![alt text](https://raw.githubusercontent.com/Keyframe/c_start/master/screenshot.png)
 
 ### TODO
-* Refactor static, dynamic, exe into separate branches
+* ~~Refactor static, dynamic, exe into separate branches~~
 * Test other platforms (linux and mingw a priority)
 * Revise build directory structure
 * Sane defaults for libs/exe if none provided, along with auto-detect of the platform
